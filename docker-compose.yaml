@@ -1,0 +1,53 @@
+version: "3.9"
+services:
+  nginx_cert:
+    image: nginxproxy/nginx-proxy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /etc/nginx/certs
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./infra/conf.d:/etc/nginx/conf.d
+  acme:
+    image: nginxproxy/acme-companion
+    restart: always
+    volumes_from:
+      - nginx_cert
+    volumes:
+      - /etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+  donft_backend_dynamic_nft_avatar:
+    build:
+      context: ./backend/
+      dockerfile: ./Dockerfile
+      args:
+        buildno: 1
+    ports:
+      - 8001:8001
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    environment:
+      - PUBLIC_HOST=acs.donft.io
+      - VIRTUAL_HOST=acs.donft.io
+      - LETSENCRYPT_HOST=acs.donft.io
+      - HOST=0.0.0.0
+      - PORT=8001
+      - ENVIRONMENT=DEV
+      - IPFS_API_HOST=https://ipfs.infura.io:5001/api/v0/
+      - IPFS_API_TIMEOUT=20000
+      - IPFS_SERVICE=NFT_STORAGE
+      - NFT_STORAGE_API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDA5QWEwMEQxNjNFZTk0MDM1RGIwM0I3ODg2NmMyRWUzZTBjMjEzQkIiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY1NjA4MTE4NDE5MSwibmFtZSI6IkRvTkZUZGV2In0.oVUvdLV-XEEl6VJvvV-nRlhlrtuQTydau_IAntj56Wg
+    volumes:
+      - /root/donft/acs/backend:/backend/
+      - /root/donft/DynamicAvatar/ipfs-kit/ipfs:/backend/ipfs
+      - /root/donft/data_storage_dynamic_avatar:/backend/data_storage_dynamic_avatar
