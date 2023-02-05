@@ -59,7 +59,7 @@ class IPFSService(BaseIPFSService):
 
     async def _make_request(
             self,
-            ipfs_method: Literal["add", "cat", "get", "name/publish", "key/gen", "name/resolve"],
+            ipfs_method: Literal["add", "cat", "get", "name/publish", "key/gen", "name/resolve", "key/list"],
             params: Dict,
             data: Optional[Dict] = None,
     ) -> bytes:
@@ -117,6 +117,12 @@ class IPFSService(BaseIPFSService):
     async def resolve(self, path):
         result = await self._make_request(
             "name/resolve", params={"arg": path}
+        )
+        return result
+
+    async def key_list(self):
+        result = await self._make_request(
+            "key/list", params={}
         )
         return result
 
