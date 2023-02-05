@@ -23,6 +23,7 @@ BASE_IPFS_SERVICE_TYPE = TypeVar("BASE_IPFS_SERVICE_TYPE", bound="BaseIPFSServic
 
 
 class BaseIPFSService(ABC):
+    PINATA_ENDPOINT_REGEX = re.compile(r'pinata.cloud/ipfs/(?P<cid>\w+)')
     IPFS_ENDPOINT_REGEX = re.compile(r'ipfs.io/ipfs/(?P<cid>\w+)')
 
     @abstractmethod
@@ -148,6 +149,35 @@ class BaseRestfulIPFSService(BaseIPFSService):
     def _get_authorization_info(self) -> Tuple[Literal["params", "headers"], Dict[str, Any]]:
         pass
 
+
+class PinataIPFSService(BaseRestfulIPFSService):
+
+    def __init__(self, api_token: str, timeout: float = 5.0):
+        super(PinataIPFSService, self).__init__(timeout)
+        self._api_token = api_token
+
+    def _get_authorization_info(self) -> Tuple[Literal["params", "headers"], Dict[str, Any]]:
+        return "headers", {"Authorization": f"Bearer {self._api_token}"}
+
+    async def add(self, payload: bytes, only_hash: bool = False) -> str:
+        resp = await self._make_request(
+            "post",
+            "https://api.pinata.cloud/pinning/pinFileToIPFS",
+            data={
+                "file": payload
+            }
+        )
+        return json.loads(resp)["IpfsHash"]
+
+    async def cat(self, ipfs_addr: str) -> bytes:
+        cid = ipfs_addr.replace('ipfs://', '')
+        if cid.startswith('Q'):  # V0 CID
+            url = f"https://gateway.pinata.cloud/ipfs/{cid}"
+        else:
+            url = f"https://gateway.pinata.cloud/ipfs/{cid}/file"
+        return await self._make_request("get", url)
+
+
 class NTFStorageIPFSService(BaseRestfulIPFSService):
 
     def __init__(self, api_token: str, timeout: float = 5.0):
@@ -183,10 +213,12 @@ class NTFStorageIPFSService(BaseRestfulIPFSService):
 
 
 class IPFSServiceEnum(Enum):
+    PINATA = "PINATA"
     NFT_STORAGE = "NFT_STORAGE"
 
 
 _service_mapping = {
+    IPFSServiceEnum.PINATA: PinataIPFSService,
     IPFSServiceEnum.NFT_STORAGE: NTFStorageIPFSService
 }
 
@@ -195,3 +227,5 @@ def get_ipfs_service(ipfs_api_timeout, ipfs_service) -> BASE_IPFS_SERVICE_TYPE:
     logging.info("[Info] IPFS provider is {IPFS_SERVICE}")
     service_cls = _service_mapping[ipfs_service]
     return service_cls(ipfs_api_timeout)
+
+# ipfs_service = get_ipfs_service()
