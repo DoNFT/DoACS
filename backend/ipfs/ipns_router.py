@@ -1,13 +1,16 @@
 import json
 
 from fastapi import Form
+from fastapi import HTTPException
 
 from .router import router
 from .service import wrapper_ipfs_service
 
 
 @router.post("/publish")
-async def name_publish(hash: str = Form(...), key_name: str = Form(...)):
+async def name_publish(hash: str = Form(...), key_name: str = Form(...), owner_address: str = Form(...)):
+    if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
+        raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
     res = await wrapper_ipfs_service.get_ipfs_service().publish(hash, key_name)
     ipns_url, ipfs_url = eval(res)['Name'], eval(res)['Value']
     await update_cron_file(ipns_url, ipfs_url.replace('/ipfs/', ''))
@@ -52,14 +55,20 @@ async def remove_ipns_url(ipns_url):
 
 
 @router.post("/key_gen")
-async def key_gen(name: str = Form(...)):
+async def key_gen(name: str = Form(...), owner_address: str = Form(...)):
+    if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
+        raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
+
     res = await wrapper_ipfs_service.get_ipfs_service().key_gen(name)
     ipns_name, ipns_cid = eval(res)['Name'], eval(res)['Id']
     return ipns_name, ipns_cid
 
 
 @router.post("resolve")
-async def resolve(ipns_url: str = Form(...)):
+async def resolve(ipns_url: str = Form(...), owner_address: str = Form(...)):
+    if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
+        raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
+
     res = await wrapper_ipfs_service.get_ipfs_service().resolve(ipns_url)
     await remove_ipns_url(ipns_url)
     return res

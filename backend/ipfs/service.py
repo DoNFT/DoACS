@@ -3,7 +3,6 @@ import logging
 import re
 from abc import ABC
 from abc import abstractmethod
-from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import Literal
@@ -11,9 +10,10 @@ from typing import Optional
 from typing import Tuple
 from typing import TypeVar
 
-import aiohttp
 from aiohttp import ClientSession
 from aiohttp import ClientTimeout
+from settings import FILE_NAME_ACCESSES
+from settings import IPFSServiceEnum
 
 
 class IPFSServiceException(Exception):
@@ -47,6 +47,15 @@ class BaseIPFSService(ABC):
         if res := cls.IPNS_ENDPOINT_REGEX.search(endpoint):
             return res.group('cid')
         return None
+
+    async def check_access(self, address) -> bool:
+        with open(FILE_NAME_ACCESSES) as f:
+            for line in f:
+                pass
+            last_line = line
+        addresses = await self.cat(last_line)
+        addresses = addresses.decode("utf-8")
+        return address in addresses.split('\n')
 
 
 class IPFSService(BaseIPFSService):
@@ -252,11 +261,6 @@ class NTFStorageIPFSService(BaseRestfulIPFSService):
         logging.info(f"[Info] Getting file from {url}")
         return await self._make_request("get", url)
 
-
-class IPFSServiceEnum(Enum):
-    PINATA = "PINATA"
-    NFT_STORAGE = "NFT_STORAGE"
-    IPFS = "IPFS"
 
 
 _service_mapping = {

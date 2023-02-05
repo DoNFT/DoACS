@@ -2,8 +2,8 @@ from fastapi import APIRouter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ipfs.service import IPFSServiceEnum
 from ipfs.service import wrapper_ipfs_service
+from settings import IPFSServiceEnum
 from settings import IPFS_API_HOST
 from settings import IPFS_API_TIMEOUT
 from settings import IPFS_PROJECT_ID

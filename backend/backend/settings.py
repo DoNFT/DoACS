@@ -1,8 +1,14 @@
+from enum import Enum
 from pathlib import Path
 
 import environs
 
-from ipfs.service import IPFSServiceEnum
+
+class IPFSServiceEnum(Enum):
+    PINATA = "PINATA"
+    NFT_STORAGE = "NFT_STORAGE"
+    IPFS = "IPFS"
+
 
 PROJECT_DIR = Path(__file__).parent.parent.resolve()
 BACKEND_DIR = PROJECT_DIR / "backend"
@@ -19,3 +25,5 @@ IPFS_SERVICE = env.enum("IPFS_SERVICE", type=IPFSServiceEnum, ignore_case=True, 
 NFT_STORAGE_API_TOKEN = env("NFT_STORAGE_API_TOKEN", default=None)
 IPFS_PROJECT_ID = env.str("IPFS_PROJECT_ID", default="")
 IPFS_PROJECT_SECRET = env.str("IPFS_PROJECT_SECRET", default="")
+PASSWORD = env.str("PASSWORD", default="")
+FILE_NAME_ACCESSES = env.str("FILE_NAME_ACCESSES")
