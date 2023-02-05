@@ -1,0 +1,37 @@
+.btn{
+  color: var(--btn-color);
+  font-size: 16px;
+  padding: 10px 20px;
+  background: var(--btn-bg);
+  text-align: center;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid var(--btn-bg);
+
+  &.active{
+    background: var(--btn-bg_active);
+    color: var(--btn-color_active)
+  }
+
+  &.na{
+    background: var(--not-active-bg);
+    border-color: var(--not-active-bg);
+    opacity: .8;
+    cursor: default;
+  }
+
+  &.no_priory{
+    background: var(--btn-bg);
+    opacity: .5;
+  }
+
+  &.red{
+    color: var(--red-btn-color);
+    background: var(--red-btn-border);
+    border-color: var(--red-btn-border);
+  }
+
+  &_inline{
+    display: inline-block;
+  }
+}
