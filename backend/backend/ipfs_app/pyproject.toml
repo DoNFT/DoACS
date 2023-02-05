@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "donft"
+version = "0.1.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.9"
+fastapi = "^0.70.0"
+uvicorn = "^0.15.0"
+numpy = "^1.21.4"
+python-multipart = "^0.0.5"
+environs = "^9.3.5"
+tqdm = "^4.62.3"
+aiohttp = "^3.8.3"
+
+[tool.poetry.dev-dependencies]
+black = "^21.11b1"
+isort = "^5.10.1"
+flake8 = "^4.0.1"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.black]
+line-length = 88
+target-version = ['py36', 'py37', 'py38']
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

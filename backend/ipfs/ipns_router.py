@@ -1,6 +1,6 @@
-from fastapi import File
+import json
+
 from fastapi import Form
-from fastapi import UploadFile
 
 from .router import router
 from .service import wrapper_ipfs_service
@@ -10,7 +10,26 @@ from .service import wrapper_ipfs_service
 async def name_publish(hash: str = Form(...), key_name: str = Form(...)):
     res = await wrapper_ipfs_service.get_ipfs_service().publish(hash, key_name)
     ipns_url, ipfs_url = eval(res)['Name'], eval(res)['Value']
+    await update_cron_file(ipns_url, ipfs_url.replace('/ipfs/', ''))
     return ipns_url, ipfs_url
+
+
+async def update_cron_file(ipns_url, ipfs_url):
+    with open('ipns_keys.json', 'r') as f:
+        ipns_keys = json.load(f)
+        ipns_keys[ipns_url] = ipfs_url
+    with open('ipns_keys.json', 'w') as f:
+        json.dump(ipns_keys, f)
+
+
+async def remove_ipns_url(ipns_url):
+    with open('ipns_keys.json', 'r') as f:
+        ipns_keys = json.load(f)
+    ipns_key = ipns_url.split('/')[-1]
+    if ipns_key in ipns_keys:
+        del ipns_keys[ipns_key]
+        with open('ipns_keys.json', 'w') as f:
+            json.dump(ipns_keys, f)
 
 
 # @router.post("/create_ipns")
@@ -41,7 +60,16 @@ async def key_gen(name: str = Form(...)):
 
 @router.post("resolve")
 async def resolve(ipns_url: str = Form(...)):
-    return await wrapper_ipfs_service.get_ipfs_service().resolve(ipns_url)
+    res = await wrapper_ipfs_service.get_ipfs_service().resolve(ipns_url)
+    await remove_ipns_url(ipns_url)
+    return res
+
+
+@router.get("/get_keys")
+async def get_keys():
+    with open('ipns_keys.json', 'r') as f:
+        ipns_keys = json.load(f)
+    return ipns_keys
 
 
 async def key_list():
