@@ -18,7 +18,7 @@ foo = loop.run_until_complete(access_controller.init())
 async def name_publish(hash: str = Form(...), key_name: str = Form(...), owner_address: str = Form(...)):
     # if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
     #     raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
-    await access_controller.create_new_addr(owner_address, hash)
+    await access_controller.create_new_addr(key_name, owner_address)
     res = await wrapper_ipfs_service.get_ipfs_service().publish(hash, key_name)
     ipns_url, ipfs_url = eval(res)['Name'], eval(res)['Value']
     await update_cron_file(ipns_url, ipfs_url.replace('/ipfs/', ''))
@@ -27,12 +27,12 @@ async def name_publish(hash: str = Form(...), key_name: str = Form(...), owner_a
 
 @router.get("/get_files_from_wallet")
 async def get_files_from_wallet(wallet: str):
-    return access_controller.get_files_from_wallet(wallet)
+    return json.dumps(await access_controller.get_files_from_wallet(wallet))
 
 
 @router.get("/get_file_accesses")
 async def get_file_accesses(file_addr: str):
-    return access_controller.get_file_accesses(file_addr)
+    return json.dumps(await access_controller.get_file_accesses(file_addr))
 
 
 async def update_cron_file(ipns_url, ipfs_url):

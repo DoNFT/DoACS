@@ -59,19 +59,27 @@ class AccessController:
         with open(self._path_to_ipfs_access_file, "a") as f:
             f.write('\n' + new_hash)
 
+    @staticmethod
+    def _convert_to_set(ll: List[List]):
+        res = set([tuple(l) for l in ll])
+        return res
+
     async def _consistency_check(self):
         addr_to_wallet = await self._read_access_file()
         addr = ''
         try:
             for addr, files in self._file_to_wallets.items():
-                if set(addr_to_wallet[addr]) != set(files):
+                print(addr)
+                print(addr_to_wallet)
+                print(files)
+                if self._convert_to_set(addr_to_wallet[addr]) != self._convert_to_set(files):
                     raise ConsistencyError(f'Not equal {addr_to_wallet[addr]} {files}')
         except KeyError:
             raise ConsistencyError(f'error wallet_to_files. not find {addr}')
 
         try:
             for addr, files in addr_to_wallet.items():
-                if set(self._file_to_wallets[addr]) != set(files):
+                if self._convert_to_set(self._file_to_wallets[addr]) != self._convert_to_set(files):
                     raise ConsistencyError(f'Not equal {self._file_to_wallets[addr]} {files}')
         except KeyError:
             raise ConsistencyError(f'error wallet_to_files. not find {addr}')
@@ -80,14 +88,14 @@ class AccessController:
         wallet = ''
         try:
             for wallet, files in self._wallet_to_files.items():
-                if set(tmp_wallet_to_files[wallet]) != set(files):
+                if self._convert_to_set(tmp_wallet_to_files[wallet]) != self._convert_to_set(files):
                     raise ConsistencyError(f'Not equal {tmp_wallet_to_files[wallet]} {files}')
         except KeyError:
             raise ConsistencyError(f'error wallet_to_files. not find {wallet}')
 
         try:
             for wallet, files in tmp_wallet_to_files.items():
-                if set(self._wallet_to_files[wallet]) != set(files):
+                if self._convert_to_set(self._wallet_to_files[wallet]) != self._convert_to_set(files):
                     raise ConsistencyError(f'Not equal {self._wallet_to_files[wallet]} {files}')
         except KeyError:
             raise ConsistencyError(f'error wallet_to_files. not find {wallet}')
@@ -114,8 +122,8 @@ class AccessController:
 
     async def get_file_accesses(self, file_addr):
         file_accesses = []
-        file_to_wallets = self._file_to_wallets
-        for wall, access in file_to_wallets[file_addr]:
+        wallets = self._file_to_wallets.get(file_addr, [])
+        for wall, access in wallets:
             file_accesses.append([wall, ACCESS_TO_STR[access]])
         return file_accesses
 
@@ -123,7 +131,7 @@ class AccessController:
         if file_access not in [-1, 0, 1]:
             return
         await self._consistency_check()
-
+        f = False
         for wall, access in self._file_to_wallets[file_addr]:
             if wall != owner_wallet:
                 continue
@@ -132,13 +140,15 @@ class AccessController:
         new_wallets = []
         for wall, access in self._file_to_wallets[file_addr]:
             if wall == wallet:
+                f = True
                 if access == -1:
                     continue
                 else:
                     new_wallets.append([wall, int(file_access)])
             else:
                 new_wallets.append([wall, access])
-
+        if not f:
+            new_wallets.append([wallet, int(file_access)])
         self._file_to_wallets[file_addr] = new_wallets
         self._wallet_to_files = self._generate_wallet_to_files()
         await self._save_access_file()
