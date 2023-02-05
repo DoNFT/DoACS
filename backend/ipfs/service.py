@@ -11,6 +11,7 @@ from typing import Optional
 from typing import Tuple
 from typing import TypeVar
 
+import aiohttp
 from aiohttp import ClientSession
 from aiohttp import ClientTimeout
 
@@ -25,6 +26,7 @@ BASE_IPFS_SERVICE_TYPE = TypeVar("BASE_IPFS_SERVICE_TYPE", bound="BaseIPFSServic
 class BaseIPFSService(ABC):
     PINATA_ENDPOINT_REGEX = re.compile(r'pinata.cloud/ipfs/(?P<cid>\w+)')
     IPFS_ENDPOINT_REGEX = re.compile(r'ipfs.io/ipfs/(?P<cid>\w+)')
+    IPNS_ENDPOINT_REGEX = re.compile(r'ipfs.io/ipns/(?P<cid>\w+)')
 
     @abstractmethod
     async def add(self, payload: bytes, only_hash: bool = False) -> str:
@@ -42,13 +44,17 @@ class BaseIPFSService(ABC):
             return res.group('cid')
         if res := cls.IPFS_ENDPOINT_REGEX.search(endpoint):
             return res.group('cid')
+        if res := cls.IPNS_ENDPOINT_REGEX.search(endpoint):
+            return res.group('cid')
         return None
 
 
 class IPFSService(BaseIPFSService):
 
-    def __init__(self, base_url: str, timeout: float = 5):
-        self.base_url = base_url.rstrip("/") + "/"
+    def __init__(self, params: Tuple[str, str, str], timeout: float = 5):
+        self.base_url = params[0].rstrip("/") + "/"
+        self.project_id = params[1]
+        self.project_secret = params[2]
         self.timeout = ClientTimeout(timeout)
 
     async def _make_request(
@@ -67,6 +73,17 @@ class IPFSService(BaseIPFSService):
                 )
             return await resp.read()
 
+    async def get_meta_info(
+            self,
+            url: str,
+            info_key='content-type'
+    ):
+
+        async with ClientSession(timeout=self.timeout) as session:
+            async with session.head(url) as resp:
+                info = resp.headers[info_key]
+        return info
+
     async def add(self, payload: bytes, only_hash: bool = False) -> str:
         result = await self._make_request(
             "add", {"only-hash": str(only_hash).lower()}, {"file": payload}
@@ -81,13 +98,13 @@ class IPFSService(BaseIPFSService):
 
     async def cat(self, ipfs_addr: str) -> bytes:
         result = await self._make_request(
-            "cat", {"arg": ipfs_addr.replace("ipfs://", "")}
+            "cat", {"arg": ipfs_addr}
         )
         return result
 
     async def publish(self, hash, key_name):
         result = await self._make_request(
-            "name/publish",  params={"arg": hash, "key": key_name}
+            "name/publish", params={"arg": hash, "key": key_name}
         )
         return result
 
@@ -99,7 +116,7 @@ class IPFSService(BaseIPFSService):
 
     async def resolve(self, path):
         result = await self._make_request(
-            "name/resolve",  params={"arg": path}
+            "name/resolve", params={"arg": path}
         )
         return result
 
@@ -247,35 +264,37 @@ class WrapperIpfsService:
     def __init__(self):
         self._init = False
         self._ipfs_api_timeout = None
-        self._name_ipfs_service = None
-        self._api_token = None
+        self.name_ipfs_service = None
+        self._params = None
+        self._ipfs_service = None
 
-    def init(self, ipfs_api_timeout, name_ipfs_service, api_token):
+    def init(self, ipfs_api_timeout, name_ipfs_service, params):
         self._ipfs_api_timeout = ipfs_api_timeout
-        self._name_ipfs_service = name_ipfs_service
-        self._api_token = api_token
+        self.name_ipfs_service = name_ipfs_service
+        self._params = params
+        self._ipfs_service = get_ipfs_service(self._ipfs_api_timeout, self.name_ipfs_service, self._params)
         self._init = True
 
     def get_ipfs_service(self):
         if not self._init:
             raise ValueError('Ipfs service must be initialization')
-        return get_ipfs_service(self._ipfs_api_timeout, self._name_ipfs_service, self._api_token)
+        return self._ipfs_service
 
     def get_router(self):
         if not self._init:
             raise ValueError('Ipfs service must be initialization')
-        if self._name_ipfs_service == IPFSServiceEnum.IPFS:
-            from ipns_router import router
+        if self.name_ipfs_service == IPFSServiceEnum.IPFS:
+            from .ipns_router import router
             return router
         else:
-            from router import router
+            from .router import router
             return router
 
 
-def get_ipfs_service(ipfs_api_timeout, name_ipfs_service, api_token) -> BASE_IPFS_SERVICE_TYPE:
+def get_ipfs_service(ipfs_api_timeout, name_ipfs_service, params) -> BASE_IPFS_SERVICE_TYPE:
     logging.info("[Info] IPFS provider is {IPFS_SERVICE}")
     service_cls = _service_mapping[name_ipfs_service]
-    return service_cls(api_token, ipfs_api_timeout)
+    return service_cls(params, ipfs_api_timeout)
 
 
-ipfs_service = WrapperIpfsService()
+wrapper_ipfs_service = WrapperIpfsService()
