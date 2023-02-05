@@ -20,34 +20,22 @@ services:
     volumes:
       - /etc/acme.sh
       - /var/run/docker.sock:/var/run/docker.sock:ro
-  donft_backend_dynamic_nft_avatar:
-    build:
-      context: ./backend/
-      dockerfile: ./Dockerfile
-      args:
-        buildno: 1
-    ports:
-      - 8001:8001
-    restart: always
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
+  donft_backend_ipfs_pure:
+    extends:
+      file: ./backend/ipfs-pure-service.yaml
+      service: donft_ipfs_pure
     environment:
-      - PUBLIC_HOST=acs.donft.io
-      - VIRTUAL_HOST=acs.donft.io
-      - LETSENCRYPT_HOST=acs.donft.io
-      - HOST=0.0.0.0
-      - PORT=8001
-      - ENVIRONMENT=DEV
-      - IPFS_API_HOST=https://ipfs.infura.io:5001/api/v0/
-      - IPFS_API_TIMEOUT=20000
-      - IPFS_SERVICE=NFT_STORAGE
-      - NFT_STORAGE_API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDA5QWEwMEQxNjNFZTk0MDM1RGIwM0I3ODg2NmMyRWUzZTBjMjEzQkIiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY1NjA4MTE4NDE5MSwibmFtZSI6IkRvTkZUZGV2In0.oVUvdLV-XEEl6VJvvV-nRlhlrtuQTydau_IAntj56Wg
+      - PUBLIC_HOST=$IPFS_PURE_URL
+      - VIRTUAL_HOST=$IPFS_PURE_URL
+      - PASSWORD=$PASSWORD
+  ipfs-node-1:
+    container_name: ipfs-node-1
+    image: ipfs/go-ipfs:latest
+    ports:
+      - 4001:4001 # ipfs swarm - expose if needed/wanted
+      - 5001:5001 # ipfs api - expose if needed/wanted
+      - 8080:8080 # ipfs gateway - expose if needed/wanted
     volumes:
-      - /root/donft/acs/backend:/backend/
-      - /root/donft/DynamicAvatar/ipfs-kit/ipfs:/backend/ipfs
-      - /root/donft/data_storage_dynamic_avatar:/backend/data_storage_dynamic_avatar
+      - ./data/ipfs:/data/ipfs
+      - ./data/ipfs-staging:/staging
+  

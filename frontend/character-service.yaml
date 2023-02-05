@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  donft_character:
+    build: ./
+    restart: always
+    environment:
+      - VIRTUAL_HOST=acs.donft.io
+     # - LETSENCRYPT_HOST=ethcc.donft.io
+      - VUE_APP_API_ENDPOINT=https://acsback.donft.io/api
+      - VUE_APP_API_TIMEOUT=200
+      - VUE_APP_MOBILE_SKETCH=900
+      - VUE_APP_NETWORK=testnet
