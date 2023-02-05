@@ -1,20 +1,38 @@
+import asyncio
 import json
 
 from fastapi import Form
 from fastapi import HTTPException
 
+from settings import FILE_NAME_ACCESSES
+from .access_controller import AccessController, Access
 from .router import router
 from .service import wrapper_ipfs_service
+
+access_controller = AccessController(FILE_NAME_ACCESSES)
+loop = asyncio.get_event_loop()
+foo = loop.run_until_complete(access_controller.init())
 
 
 @router.post("/publish")
 async def name_publish(hash: str = Form(...), key_name: str = Form(...), owner_address: str = Form(...)):
-    if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
-        raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
+    # if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
+    #     raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
+    await access_controller.create_new_addr(owner_address, hash)
     res = await wrapper_ipfs_service.get_ipfs_service().publish(hash, key_name)
     ipns_url, ipfs_url = eval(res)['Name'], eval(res)['Value']
     await update_cron_file(ipns_url, ipfs_url.replace('/ipfs/', ''))
     return ipns_url, ipfs_url
+
+
+@router.get("/get_files_from_wallet")
+async def get_files_from_wallet(wallet: str):
+    return access_controller.get_files_from_wallet(wallet)
+
+
+@router.get("/get_file_accesses")
+async def get_file_accesses(file_addr: str):
+    return access_controller.get_file_accesses(file_addr)
 
 
 async def update_cron_file(ipns_url, ipfs_url):
@@ -33,6 +51,12 @@ async def remove_ipns_url(ipns_url):
         del ipns_keys[ipns_key]
         with open('ipns_keys.json', 'w') as f:
             json.dump(ipns_keys, f)
+
+
+@router.post("/change_access_to_file")
+async def change_access_to_file(file_addr: str = Form(...), wallet: str = Form(...), file_access: int = Form(...),
+                                owner_wallet: str = Form(...)):
+    await access_controller.change_access_to_file(file_addr, wallet, file_access, owner_wallet)
 
 
 # @router.post("/create_ipns")
@@ -55,21 +79,22 @@ async def remove_ipns_url(ipns_url):
 
 
 @router.post("/key_gen")
-async def key_gen(name: str = Form(...), owner_address: str = Form(...)):
-    if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
-        raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
+async def key_gen(name: str = Form(...)):
+    # if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
+    #     raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
 
     res = await wrapper_ipfs_service.get_ipfs_service().key_gen(name)
     ipns_name, ipns_cid = eval(res)['Name'], eval(res)['Id']
     return ipns_name, ipns_cid
 
 
-@router.post("resolve")
-async def resolve(ipns_url: str = Form(...), owner_address: str = Form(...)):
-    if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
+@router.post("remove")
+async def remove(ipns_url: str = Form(...), owner_address: str = Form(...)):
+    # if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
+    #     raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
+    if await access_controller.get_access(owner_address, ipns_url) < Access.OWNER:
         raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
-
-    res = await wrapper_ipfs_service.get_ipfs_service().resolve(ipns_url)
+    res = await wrapper_ipfs_service.get_ipfs_service().remove(ipns_url)
     await remove_ipns_url(ipns_url)
     return res
 

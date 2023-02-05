@@ -48,14 +48,14 @@ class BaseIPFSService(ABC):
             return res.group('cid')
         return None
 
-    async def check_access(self, address) -> bool:
-        with open(FILE_NAME_ACCESSES) as f:
-            for line in f:
-                pass
-            last_line = line
-        addresses = await self.cat(last_line)
-        addresses = addresses.decode("utf-8")
-        return address in addresses.split('\n')
+    # async def check_access(self, address) -> bool:
+    #     with open(FILE_NAME_ACCESSES) as f:
+    #         for line in f:
+    #             pass
+    #         last_line = line
+    #     addresses = await self.cat(last_line)
+    #     addresses = addresses.decode("utf-8")
+    #     return address in addresses.split('\n')
 
 
 class IPFSService(BaseIPFSService):

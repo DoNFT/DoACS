@@ -12,45 +12,45 @@ from .service import wrapper_ipfs_service
 router = APIRouter(prefix="/ipfs")
 
 
-@router.post("/add_new_address")
-async def add_address(new_address, psw):
-    if psw != PASSWORD:
-        raise HTTPException(status_code=400, detail=f"Wrong password")
+# @router.post("/add_new_address")
+# async def add_address(new_address, psw):
+#     if psw != PASSWORD:
+#         raise HTTPException(status_code=400, detail=f"Wrong password")
+#
+#     with open(FILE_NAME_ACCESSES) as f:
+#         line = None
+#         for line in f:
+#             pass
+#         last_line = line
+#     if last_line:
+#         addresses = await wrapper_ipfs_service.get_ipfs_service().cat(last_line)
+#         addresses = addresses.decode("utf-8") + '\n'
+#     else:
+#         addresses = ""
+#     addresses += new_address
+#     new_hash = await wrapper_ipfs_service.get_ipfs_service().add(bytes(addresses, 'utf-8'))
+#     with open(FILE_NAME_ACCESSES, "a") as f:
+#         f.write('\n' + new_hash)
 
-    with open(FILE_NAME_ACCESSES) as f:
-        line = None
-        for line in f:
-            pass
-        last_line = line
-    if last_line:
-        addresses = await wrapper_ipfs_service.get_ipfs_service().cat(last_line)
-        addresses = addresses.decode("utf-8") + '\n'
-    else:
-        addresses = ""
-    addresses += new_address
-    new_hash = await wrapper_ipfs_service.get_ipfs_service().add(bytes(addresses, 'utf-8'))
-    with open(FILE_NAME_ACCESSES, "a") as f:
-        f.write('\n' + new_hash)
 
-
-@router.post("/get_address")
-async def get_address(payload: UploadFile = File(...)) -> str:
-    """
-    Get ipfs address of file
-    Returns: ipfs Hash
-    """
-    hash = await wrapper_ipfs_service.get_ipfs_service().add(payload.file.read(), only_hash=True)
-    return f"ipfs://{hash}"
+# @router.post("/get_address")
+# async def get_address(payload: UploadFile = File(...)) -> str:
+#     """
+#     Get ipfs address of file
+#     Returns: ipfs Hash
+#     """
+#     hash = await wrapper_ipfs_service.get_ipfs_service().add(payload.file.read(), only_hash=True)
+#     return f"ipfs://{hash}"
 
 
 @router.post("/upload")
-async def upload(payload: UploadFile = File(...), owner_address: str = Form(...)) -> str:
+async def upload(payload: UploadFile = File(...)) -> str:
     """
     Uploads file to ipfs
     Returns: ipfs Hash
     """
-    if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
-        raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
+    # if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
+    #     raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
     hash = await wrapper_ipfs_service.get_ipfs_service().add(payload.file.read())
     return f"ipfs://{hash}"
 
