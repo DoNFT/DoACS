@@ -69,9 +69,6 @@ class AccessController:
         addr = ''
         try:
             for addr, files in self._file_to_wallets.items():
-                print(addr)
-                print(addr_to_wallet)
-                print(files)
                 if self._convert_to_set(addr_to_wallet[addr]) != self._convert_to_set(files):
                     raise ConsistencyError(f'Not equal {addr_to_wallet[addr]} {files}')
         except KeyError:
@@ -143,11 +140,9 @@ class AccessController:
         f = False
         new_wallets = []
         for wall, access in self._file_to_wallets[file_addr]:
-            print(wall)
-            print(wallet)
             if wall == wallet:
                 f = True
-                if access == -1:
+                if file_access == -1:
                     continue
                 else:
                     new_wallets.append([wall, int(file_access)])
