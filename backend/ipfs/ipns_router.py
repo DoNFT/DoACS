@@ -29,7 +29,7 @@ async def name_publish(hash: str = Form(...), key_name: str = Form(...), wallet:
     else:
         f = False
         for wall, access in file_accesses:
-            if wall == wallet and access >= Access.EDIT:
+            if wall == wallet and access >= Access.EDIT.value:
                 f = True
                 res = await wrapper_ipfs_service.get_ipfs_service().publish(hash, key_name)
                 ipns_url, ipfs_url = eval(res)['Name'], eval(res)['Value']
