@@ -2,7 +2,7 @@ version: "3.9"
 services:
   donft_ipfs_pure:
     build:
-      context: /root/ipfs-kit/backend/
+      context: /root/DoACS/backend/backend/
       dockerfile: ./ipfs_app/Dockerfile
       args:
         buildno: 1
@@ -16,8 +16,8 @@ services:
       - IPFS_PROJECT_ID=23gzaKecKievdRIjstg7WA4QPoF
       - IPFS_PROJECT_SECRET=83a21969d6bdfd8674b91be42f7799ce
       - IPFS_SERVICE=IPFS
-      - IPFS_API_HOST=http://0.0.0.0:5001/api/v0/
+      - IPFS_API_HOST=http://172.18.0.3:5001/api/v0/
       - FILE_NAME_ACCESSES=accesses_pure.txt
     volumes:
-      - /root/ipfs-kit/backend:/backend/
-      - /root/ipfs-kit/ipfs:/backend/ipfs
+      - /root/DoACS/backend/backend:/backend/
+      - /root/DoACS/backend/ipfs:/backend/ipfs
