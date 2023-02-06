@@ -3,10 +3,13 @@
     <div class="lp-intro">
       <div>
         <h1>
-          Welcome to DoCharacter demo by DoNFT
+          Welcome to DoACS demo by DoNFT
         </h1>
         <div>
-          Use power of neural network algorithms to create new unique combinations of digital art
+          Access Control Service allows you:
+          - publish file of IPFS
+          - use IPNS approach to update files by link
+          - manage access to updating files on IPNS
         </div>
         <div>
           <span class="btn" @click="openModal">Connect wallet</span>
