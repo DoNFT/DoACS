@@ -42,12 +42,12 @@ async def name_publish(hash: str = Form(...), key_name: str = Form(...), wallet:
 
 @router.get("/get_files_from_wallet")
 async def get_files_from_wallet(wallet: str):
-    return json.dumps(await access_controller.get_files_from_wallet(wallet))
+    return await access_controller.get_files_from_wallet(wallet)
 
 
 @router.get("/get_file_accesses")
 async def get_file_accesses(file_addr: str):
-    return json.dumps(await access_controller.get_file_accesses(file_addr))
+    return await access_controller.get_file_accesses(file_addr)
 
 
 async def update_cron_file(ipns_url, ipfs_url):
