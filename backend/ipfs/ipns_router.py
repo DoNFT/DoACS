@@ -72,7 +72,8 @@ async def remove_ipns_url(ipns_url):
 async def change_access_to_file(file_addr: str = Form(...), wallet: str = Form(...), file_access: int = Form(...),
                                 owner_wallet: str = Form(...)):
     try:
-        await access_controller.change_access_to_file(file_addr.lower(), wallet.lower(), file_access, owner_wallet.lower())
+        await access_controller.change_access_to_file(file_addr.lower(), wallet.lower(), file_access,
+                                                      owner_wallet.lower())
     except (PermissionDenied, ValueError) as ex:
         raise HTTPException(status_code=400, detail=f"{str(ex)}")
 
