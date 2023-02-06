@@ -94,6 +94,35 @@
     margin-top: 20px
   }
 
+  &__permissions{
+    display: grid;
+    grid-template-columns: 100%;
+    gap: 5px;
+    padding: 5px;
+
+    .item{
+      display: grid;
+      grid-template-columns: 1fr 1fr 30px;
+      gap: 5px;
+      align-items: center;
+
+      & > div:last-child{
+        text-align: center;
+      }
+    }
+
+    .rm{
+      cursor: pointer;
+      svg {
+        width: 20px;
+
+        path{
+          stroke: #333333;
+        }
+      }
+    }
+  }
+
   &__key-links{
     .title{
       text-align: center;

@@ -40,13 +40,14 @@ const FileCoinStorage = {
 
         return await this.publish(ipfs, key)
     },
-    async publish(ipfsHash, ipnsKey = null) {
+    async publish(ipfsHash, ipnsKey = null, owner = null) {
+        if(!owner) throw Error('Owner not defined')
         if(!ipnsKey) ({value: ipnsKey} = await this.keyGen())
         let ipnsHash = null
         let i = 0
-        while (i < +process.env.VUE_APP_IPNS_ATTEMPTS || 10) {
+        while (i < (+process.env.VUE_APP_IPNS_ATTEMPTS || 10)) {
             try {
-                const response = await IpnsAPI.post('/publish', `hash=${ipfsHash}&key_name=${ipnsKey}`)
+                const response = await IpnsAPI.post('/publish', `hash=${ipfsHash}&key_name=${ipnsKey}&wallet=${owner}`)
                 if(Array.isArray(response.data) && response.data.length === 2 && response.data[0] && response.data[1]) {
                     ipnsHash = response.data[0]
                     break;
@@ -113,6 +114,28 @@ const FileCoinStorage = {
             }))
         }
         throw Error('Response not valid')
+    },
+    async getFilePermissions(ipnsKey) {
+        const response = await IpnsAPI.get('/get_file_accesses', {
+            params: {
+                file_addr: ipnsKey
+            }
+        })
+        return response.data
+    },
+    async modifyFilePermissions(file_addr, wallet, file_access, owner_wallet) {
+        const accessMap = {
+            remove: -1,
+            read: 0,
+            write: 1,
+            owner: 2,
+            admin: 3,
+        }
+        const response = await IpnsAPI.post(
+            '/change_access_to_file',
+            `file_addr=${file_addr}&wallet=${wallet}&file_access=${accessMap[file_access]}&owner_wallet=${owner_wallet}`
+        )
+        return response.data
     }
 }
 

@@ -34,4 +34,10 @@
   &_inline{
     display: inline-block;
   }
+
+  &.sm {
+    font-size: 12px;
+    padding: 5px 12px;
+    margin-right: 5px
+  }
 }

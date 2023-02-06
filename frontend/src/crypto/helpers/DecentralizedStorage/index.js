@@ -33,15 +33,22 @@ export default {
         return await FileCoinStorage.changeFile(newData, key);
     },
     // only for IPNS
-    async publish(ipfsKey){
-        return await FileCoinStorage.publish(ipfsKey);
+    async publish(ipfsKey, owner){
+        return await FileCoinStorage.publish(ipfsKey, null, owner);
     },
     // only for IPNS
-    async update(newIpfsKey, ipnsKey){
-        return await FileCoinStorage.publish(newIpfsKey, ipnsKey);
+    async update(newIpfsKey, ipnsKey, owner){
+        return await FileCoinStorage.publish(newIpfsKey, ipnsKey, owner);
     },
     // only for IPNS
     async getKeyList(){
         return await FileCoinStorage.getKeyList();
+    },
+    // only for IPNS
+    async getFilePermissions(ipnsKey){
+        return await FileCoinStorage.getFilePermissions(ipnsKey);
+    },
+    async modifyFilePermissions(ipnsKey, wallet, permission, owner){
+        return await FileCoinStorage.modifyFilePermissions(ipnsKey, wallet, permission, owner);
     }
 }

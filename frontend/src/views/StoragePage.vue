@@ -96,11 +96,65 @@
           <div>IPFS key</div>
         </div>
         <div v-for="item in keyLinks">
-          <div><a target="_blank" :href="computeIPNSHash(item.ipnsKey)">{{ computeHash(item.ipnsKey) }}</a></div>
-          <div><a target="_blank" :href="computeIPFSHash(item.ipfsKey)">{{ computeHash(item.ipfsKey) }}</a></div>
+          <div>
+            <span class="btn sm" @click="loadPermissions(item.ipnsKey)">Check permissions</span>
+            <a target="_blank" :href="computeIPNSHash(item.ipnsKey)">{{ computeHash(item.ipnsKey) }}</a>
+          </div>
+          <div>
+            <a target="_blank" :href="computeIPFSHash(item.ipfsKey)">{{ computeHash(item.ipfsKey) }}</a>
+          </div>
         </div>
       </div>
     </div>
+
+    <div class="file-control" v-if="filePermissions">
+      <div class="sketch__title">File {{ computeHash(filePermissions.ipnsKey) }}</div>
+      <div class="file-control__permissions">
+        <div class="item" v-for="[wallet, permission] of filePermissions.permissions">
+          <div>{{ computeHash(wallet) }}</div>
+          <div>
+            <select
+                class="input default"
+                @change="changedFilePermission(wallet, $event.target.value)"
+                :value="permission"
+            >
+              <option disabled :value="null">Select permission</option>
+              <option :value="'read'">read</option>
+              <option :value="'write'">write</option>
+              <option disabled :value="'owner'">owner</option>
+              <option disabled :value="'admin'">admin</option>
+            </select>
+          </div>
+          <div>
+            <span class="rm" @click="removeGrants(wallet)">
+              <svg viewBox="0 0 20 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 18L17.5 3M2.5 3L17.5 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </span>
+          </div>
+        </div>
+        <div class="item">
+          <div>
+            <input type="text" class="input default" placeholder="New wallet" v-model="grantPermission.wallet">
+          </div>
+          <div>
+            <select
+                class="input default"
+                v-model="grantPermission.permission"
+            >
+              <option disabled :value="null">Select permission</option>
+              <option :value="'read'">read</option>
+              <option :value="'write'">write</option>
+              <option disabled :value="'owner'">owner</option>
+              <option disabled :value="'admin'">admin</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <span class="btn" :class="{na: grantPermission.loading}" @click="!grantPermission.loading? addPermission() : null">Add wallet</span>
+        </div>
+      </div>
+    </div>
+
+    <!---->
 
   </Sketch>
 </template>
@@ -112,21 +166,17 @@
     import {ConnectionStore, DecentralizedStorage} from "@/crypto/helpers";
     import copy from "copy-to-clipboard";
     import alert from "@/utils/alert";
+    import {stringCompare} from "@/utils/string";
 
     // only for metamask sign
     const signMessage = async () => {
       const from = ConnectionStore.getUserIdentity()
-      const exampleMessage = 'Example `personal_sign` message.';
-      try {
-        const msg = `0x${Buffer.from(exampleMessage, 'utf8').toString('hex')}`;
-        const sign = await window.ethereum.request({
-          method: 'personal_sign',
-          params: [msg, from, 'Example password'],
-        });
-        console.log(sign);
-      } catch (err) {
-        console.error(err);
-      }
+      const exampleMessage = 'Sign changes to file.';
+      const msg = `0x${Buffer.from(exampleMessage, 'utf8').toString('hex')}`;
+      return await window.ethereum.request({
+        method: 'personal_sign',
+        params: [msg, from, 'address'],
+      });
     }
 
     const getErrorMessage = e => e && (e.message || ('toString' in e? e.toString() : 'Error')) || 'Error';
@@ -183,9 +233,10 @@
     }
     const publishToIPNS = async () => {
       publishedTo.value = ''
+      const owner = ConnectionStore.getUserIdentity()
       try{
         publishProcess.value = true
-        publishedTo.value = await DecentralizedStorage.publish(ipfsHashForPublish.value)
+        publishedTo.value = await DecentralizedStorage.publish(ipfsHashForPublish.value, owner)
       }
       catch (e) {
         alert.open(getErrorMessage(e))
@@ -204,9 +255,10 @@
     })
     const submitUpdateIPNS = async () => {
       updateIPNS.updatedLink = ''
+      const owner = ConnectionStore.getUserIdentity()
       try{
         updateIPNS.isLoading = true
-        updateIPNS.updatedLink = await DecentralizedStorage.update(updateIPNS.newIpfsKey, updateIPNS.ipnsKey)
+        updateIPNS.updatedLink = await DecentralizedStorage.update(updateIPNS.newIpfsKey, updateIPNS.ipnsKey, owner)
       }
       catch (e) {
         alert.open(getErrorMessage(e))
@@ -221,6 +273,85 @@
     const keyLinks = ref([])
     const loadKeyLinks = async () => {
       keyLinks.value = await DecentralizedStorage.getKeyList()
+    }
+
+
+    const filePermissions = ref(null)
+    const loadPermissions = async (ipnsKey) => {
+      filePermissions.value = {
+        permissions: await DecentralizedStorage.getFilePermissions(ipnsKey),
+        ipnsKey: ipnsKey
+      }
+    }
+    const getFileOwner = () => {
+      const ownerEntry = filePermissions.value.permissions.find(([_, permission]) => permission === "owner")
+      if (!ownerEntry) throw Error('This file does not belong to anyone')
+      return ownerEntry[0]
+    }
+
+    const changedFilePermission = async (wallet, newPermission) => {
+      try{
+        const ownerWallet = getFileOwner()
+        if (stringCompare(ownerWallet, wallet)) throw Error('Can not modify changes')
+        const signature = await signMessage()
+        await DecentralizedStorage.modifyFilePermissions(
+            filePermissions.value.ipnsKey,
+            wallet,
+            newPermission,
+            ownerWallet
+        )
+      }
+      catch (e) {
+        alert.open(getErrorMessage(e))
+      }
+      finally {
+        loadPermissions(filePermissions.value.ipnsKey)
+      }
+    }
+
+    const grantPermission = reactive({
+      wallet: '',
+      permission: 'write',
+      loading: false
+    })
+    const addPermission = async () => {
+      grantPermission.loading = true
+      if (!grantPermission.wallet.trim()) return
+      try{
+        const ownerWallet = getFileOwner()
+        const signature = await signMessage()
+        await DecentralizedStorage.modifyFilePermissions(
+            filePermissions.value.ipnsKey,
+            grantPermission.wallet,
+            grantPermission.permission,
+            ownerWallet
+        )
+        grantPermission.wallet = ''
+      }
+      catch (e) {
+        alert.open(getErrorMessage(e))
+      }
+      finally {
+        loadPermissions(filePermissions.value.ipnsKey)
+        grantPermission.loading = false
+      }
+    }
+    const removeGrants = async (wallet) => {
+      try{
+        const ownerWallet = getFileOwner()
+        if (stringCompare(ownerWallet, wallet)) throw Error('Can not modify changes')
+        const signature = await signMessage()
+        await DecentralizedStorage.modifyFilePermissions(
+            filePermissions.value.ipnsKey,
+            wallet,
+            'remove',
+            ownerWallet
+        )
+        loadPermissions(filePermissions.value.ipnsKey)
+      }
+      catch (e) {
+        alert.open(getErrorMessage(e))
+      }
     }
 
     onMounted(() => {
