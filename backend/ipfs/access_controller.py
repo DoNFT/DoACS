@@ -146,9 +146,9 @@ class AccessController:
                     continue
                 else:
                     new_wallets.append([wall, int(file_access)])
-            else:
-                new_wallets.append([wall, access])
-        if not f:
+            elif file_access in [0, 1]:
+                new_wallets.append([wall, int(file_access)])
+        if not f and file_access in [0, 1]:
             new_wallets.append([wallet, int(file_access)])
         self._file_to_wallets[file_addr] = new_wallets
         self._wallet_to_files = self._generate_wallet_to_files()
