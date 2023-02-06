@@ -6,10 +6,10 @@
           Welcome to DoACS demo by DoNFT
         </h1>
         <div>
-          Access Control Service allows you:
-          - publish file of IPFS
-          - use IPNS approach to update files by link
-          - manage access to updating files on IPNS
+          Access Control Service allows you:<br/>
+          - publish file of IPFS<br/>
+          - use IPNS approach to update files by link<br/>
+          - manage access to updating files on IPNS<br/>
         </div>
         <div>
           <span class="btn" @click="openModal">Connect wallet</span>
