@@ -143,6 +143,8 @@ class AccessController:
         f = False
         new_wallets = []
         for wall, access in self._file_to_wallets[file_addr]:
+            print(wall)
+            print(wallet)
             if wall == wallet:
                 f = True
                 if access == -1:
