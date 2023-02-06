@@ -135,8 +135,12 @@ class AccessController:
         for wall, access in self._file_to_wallets[file_addr]:
             if wall != owner_wallet:
                 continue
+            f = True
             if access < Access.OWNER.value:
                 raise PermissionDenied(f'{owner_wallet} does not have owner access')
+        if not f:
+            raise PermissionDenied(f'{owner_wallet} does not have owner access')
+        f = False
         new_wallets = []
         for wall, access in self._file_to_wallets[file_addr]:
             if wall == wallet:
