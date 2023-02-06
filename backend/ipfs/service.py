@@ -53,7 +53,7 @@ class IPFSService(BaseIPFSService):
 
     async def _make_request(
             self,
-            ipfs_method: Literal["add", "cat", "get"],
+            ipfs_method: Literal["add", "cat", "get", "name/publish", "key/gen", "name/resolve"],
             params: Dict,
             data: Optional[Dict] = None,
     ) -> bytes:
@@ -82,6 +82,24 @@ class IPFSService(BaseIPFSService):
     async def cat(self, ipfs_addr: str) -> bytes:
         result = await self._make_request(
             "cat", {"arg": ipfs_addr.replace("ipfs://", "")}
+        )
+        return result
+
+    async def publish(self, hash, key_name):
+        result = await self._make_request(
+            "name/publish",  params={"arg": hash, "key": key_name}
+        )
+        return result
+
+    async def key_gen(self, name):
+        result = await self._make_request(
+            "key/gen", params={"arg": name, "type": "rsa", "size": 2048}
+        )
+        return result
+
+    async def resolve(self, path):
+        result = await self._make_request(
+            "name/resolve",  params={"arg": path}
         )
         return result
 
@@ -215,17 +233,49 @@ class NTFStorageIPFSService(BaseRestfulIPFSService):
 class IPFSServiceEnum(Enum):
     PINATA = "PINATA"
     NFT_STORAGE = "NFT_STORAGE"
+    IPFS = "IPFS"
 
 
 _service_mapping = {
     IPFSServiceEnum.PINATA: PinataIPFSService,
-    IPFSServiceEnum.NFT_STORAGE: NTFStorageIPFSService
+    IPFSServiceEnum.NFT_STORAGE: NTFStorageIPFSService,
+    IPFSServiceEnum.IPFS: IPFSService,
 }
 
 
-def get_ipfs_service(ipfs_api_timeout, ipfs_service) -> BASE_IPFS_SERVICE_TYPE:
-    logging.info("[Info] IPFS provider is {IPFS_SERVICE}")
-    service_cls = _service_mapping[ipfs_service]
-    return service_cls(ipfs_api_timeout)
+class WrapperIpfsService:
+    def __init__(self):
+        self._init = False
+        self._ipfs_api_timeout = None
+        self._name_ipfs_service = None
+        self._api_token = None
 
-# ipfs_service = get_ipfs_service()
+    def init(self, ipfs_api_timeout, name_ipfs_service, api_token):
+        self._ipfs_api_timeout = ipfs_api_timeout
+        self._name_ipfs_service = name_ipfs_service
+        self._api_token = api_token
+        self._init = True
+
+    def get_ipfs_service(self):
+        if not self._init:
+            raise ValueError('Ipfs service must be initialization')
+        return get_ipfs_service(self._ipfs_api_timeout, self._name_ipfs_service, self._api_token)
+
+    def get_router(self):
+        if not self._init:
+            raise ValueError('Ipfs service must be initialization')
+        if self._name_ipfs_service == IPFSServiceEnum.IPFS:
+            from ipns_router import router
+            return router
+        else:
+            from router import router
+            return router
+
+
+def get_ipfs_service(ipfs_api_timeout, name_ipfs_service, api_token) -> BASE_IPFS_SERVICE_TYPE:
+    logging.info("[Info] IPFS provider is {IPFS_SERVICE}")
+    service_cls = _service_mapping[name_ipfs_service]
+    return service_cls(api_token, ipfs_api_timeout)
+
+
+ipfs_service = WrapperIpfsService()

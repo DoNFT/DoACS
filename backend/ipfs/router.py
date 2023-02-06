@@ -41,6 +41,7 @@ async def cat(ipfs_addr: str):
     cid = ipfs_service.extract_cid(ipfs_addr)
     if cid is None:
         cid = ipfs_addr
+        # raise ValueError(f'Cannot extract cid from {ipfs_addr}')
     payload = await ipfs_service.cat(cid)
     return Response(content=payload, media_type="application/octet-stream")
 
