@@ -125,6 +125,8 @@ class AccessController:
         return file_accesses
 
     async def change_access_to_file(self, file_addr: str, wallet: str, file_access: int, owner_wallet: str):
+        if wallet == owner_wallet:
+            raise ValueError("Can't change wallet owner")
         if file_access not in [-1, 0, 1]:
             return
         await self._consistency_check()

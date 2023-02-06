@@ -5,7 +5,7 @@ from fastapi import Form
 from fastapi import HTTPException
 
 from settings import FILE_NAME_ACCESSES
-from .access_controller import AccessController, Access
+from .access_controller import AccessController, Access, PermissionDenied
 from .router import router
 from .service import wrapper_ipfs_service
 
@@ -71,7 +71,10 @@ async def remove_ipns_url(ipns_url):
 @router.post("/change_access_to_file")
 async def change_access_to_file(file_addr: str = Form(...), wallet: str = Form(...), file_access: int = Form(...),
                                 owner_wallet: str = Form(...)):
-    await access_controller.change_access_to_file(file_addr.lower(), wallet.lower(), file_access, owner_wallet.lower())
+    try:
+        await access_controller.change_access_to_file(file_addr.lower(), wallet.lower(), file_access, owner_wallet.lower())
+    except (PermissionDenied, ValueError) as ex:
+        raise HTTPException(status_code=400, detail=f"{str(ex)}")
 
 
 # @router.post("/create_ipns")
