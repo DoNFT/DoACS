@@ -146,7 +146,7 @@ class AccessController:
                     continue
                 else:
                     new_wallets.append([wall, int(file_access)])
-            elif file_access in [0, 1]:
+            else:
                 new_wallets.append([wall, int(file_access)])
         if not f and file_access in [0, 1]:
             new_wallets.append([wallet, int(file_access)])
