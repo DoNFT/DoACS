@@ -3,10 +3,10 @@
     <div class="lp-intro">
       <div>
         <h1>
-          Welcome to DoACS demo by DoNFT
+          Welcome to DoFiles demo by DoNFT
         </h1>
         <div>
-          Access Control Service allows you:<br/>
+          Decentralized DropBox on IPFS allows you:<br/>
           - publish file of IPFS<br/>
           - use IPNS approach to update files by link<br/>
           - manage access to updating files on IPNS<br/>
