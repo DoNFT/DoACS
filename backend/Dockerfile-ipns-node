@@ -1,0 +1,3 @@
+FROM ipfs/kubo:latest
+
+CMD ["daemon", "--migrate=true", "--enable-gc", "--agent-version-suffix=docker"]
