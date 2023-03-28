@@ -44,14 +44,14 @@ router = APIRouter(prefix="/ipfs")
 
 
 @router.post("/upload")
-async def upload(payload: UploadFile = File(...)) -> str:
+async def upload(payload: UploadFile = File(...), wrap_with_dir: bool = Form(False)) -> str:
     """
     Uploads file to ipfs
     Returns: ipfs Hash
     """
     # if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
     #     raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
-    hash = await wrapper_ipfs_service.get_ipfs_service().add(payload.file.read())
+    hash = await wrapper_ipfs_service.get_ipfs_service().add(payload.file.read(), wrap_with_dir=wrap_with_dir)
     return f"ipfs://{hash}"
 
 

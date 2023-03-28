@@ -20,7 +20,7 @@ async def name_publish(hash: str = Form(...), key_name: str = Form(...), wallet:
     #     raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
     ipns_url = ''
     ipfs_url = ''
-    file_accesses = access_controller._file_to_wallets.get(key_name, [])
+    file_accesses = access_controller._file_to_signs.get(key_name, [])
     if not file_accesses:
         await access_controller.create_new_addr(key_name, wallet.lower())
         res = await wrapper_ipfs_service.get_ipfs_service().publish(hash, key_name)
@@ -41,8 +41,8 @@ async def name_publish(hash: str = Form(...), key_name: str = Form(...), wallet:
 
 
 @router.get("/get_files_from_wallet")
-async def get_files_from_wallet(wallet: str):
-    return await access_controller.get_files_from_wallet(wallet.lower())
+async def get_files_from_wallet(wallet: str, sign: str):
+    return await access_controller.get_files_from_sign(wallet.lower())
 
 
 @router.get("/get_file_accesses")

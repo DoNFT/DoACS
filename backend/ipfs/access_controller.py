@@ -4,7 +4,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Union, Dict, List
 
+from ipfs.cryptographer import FernetCryptographer
 from ipfs.service import wrapper_ipfs_service
+from settings import FERNET_KEY
 
 
 class Access(Enum):
@@ -33,13 +35,14 @@ class PermissionDenied(Exception):
 class AccessController:
     def __init__(self, path_to_ipfs_access_file: Union[Path, str]):
         self._path_to_ipfs_access_file = Path(path_to_ipfs_access_file)
-        self._file_to_wallets: Dict[str, List[List[str, int]]] = dict()
-        self._wallet_to_files: Dict[str, List[List[Union[str, int]]]] = dict()
+        self._file_to_signs: Dict[str, List[List[str, int]]] = dict()
+        self._sign_to_files: Dict[str, List[List[Union[str, int]]]] = dict()
+        self._cryptographer = FernetCryptographer(FERNET_KEY)
 
     async def init(self):
-        self._file_to_wallets: Dict[str, List[List[str, int]]] = await self._read_access_file()
+        self._file_to_signs: Dict[str, List[List[str, int]]] = await self._read_access_file()
 
-        self._wallet_to_files: Dict[str, List[List[Union[str, int]]]] = self._generate_wallet_to_files()
+        self._sign_to_files: Dict[str, List[List[Union[str, int]]]] = self._generate_sign_to_files()
 
     async def _read_access_file(self) -> Dict[str, List[List[Union[str, int]]]]:
         with open(self._path_to_ipfs_access_file) as f:
@@ -47,14 +50,14 @@ class AccessController:
             for line in f:
                 pass
             last_line = line
-        addr_to_wallet = dict()
+        addr_to_sign = dict()
         if last_line:
-            addr_to_wallet = await wrapper_ipfs_service.get_ipfs_service().cat(last_line)
-            addr_to_wallet = json.loads(addr_to_wallet)
-        return addr_to_wallet
+            addr_to_sign = await wrapper_ipfs_service.get_ipfs_service().cat(last_line)
+            addr_to_sign = json.loads(addr_to_sign)
+        return addr_to_sign
 
     async def _save_access_file(self):
-        json_dump = json.dumps(self._file_to_wallets).encode('utf-8')
+        json_dump = json.dumps(self._file_to_signs).encode('utf-8')
         new_hash = await wrapper_ipfs_service.get_ipfs_service().add(json_dump)
         with open(self._path_to_ipfs_access_file, "a") as f:
             f.write('\n' + new_hash)
@@ -65,37 +68,37 @@ class AccessController:
         return res
 
     async def _consistency_check(self):
-        addr_to_wallet = await self._read_access_file()
+        addr_to_sign = await self._read_access_file()
         addr = ''
         try:
-            for addr, files in self._file_to_wallets.items():
-                if self._convert_to_set(addr_to_wallet[addr]) != self._convert_to_set(files):
-                    raise ConsistencyError(f'Not equal {addr_to_wallet[addr]} {files}')
+            for addr, files in self._file_to_signs.items():
+                if self._convert_to_set(addr_to_sign[addr]) != self._convert_to_set(files):
+                    raise ConsistencyError(f'Not equal {addr_to_sign[addr]} {files}')
         except KeyError:
-            raise ConsistencyError(f'error wallet_to_files. not find {addr}')
+            raise ConsistencyError(f'error sign_to_files. not find {addr}')
 
         try:
-            for addr, files in addr_to_wallet.items():
-                if self._convert_to_set(self._file_to_wallets[addr]) != self._convert_to_set(files):
-                    raise ConsistencyError(f'Not equal {self._file_to_wallets[addr]} {files}')
+            for addr, files in addr_to_sign.items():
+                if self._convert_to_set(self._file_to_signs[addr]) != self._convert_to_set(files):
+                    raise ConsistencyError(f'Not equal {self._file_to_signs[addr]} {files}')
         except KeyError:
-            raise ConsistencyError(f'error wallet_to_files. not find {addr}')
+            raise ConsistencyError(f'error sign_to_files. not find {addr}')
 
-        tmp_wallet_to_files = self._generate_wallet_to_files()
-        wallet = ''
+        tmp_sign_to_files = self._generate_sign_to_files()
+        sign = ''
         try:
-            for wallet, files in self._wallet_to_files.items():
-                if self._convert_to_set(tmp_wallet_to_files[wallet]) != self._convert_to_set(files):
-                    raise ConsistencyError(f'Not equal {tmp_wallet_to_files[wallet]} {files}')
+            for sign, files in self._sign_to_files.items():
+                if self._convert_to_set(tmp_sign_to_files[sign]) != self._convert_to_set(files):
+                    raise ConsistencyError(f'Not equal {tmp_sign_to_files[sign]} {files}')
         except KeyError:
-            raise ConsistencyError(f'error wallet_to_files. not find {wallet}')
+            raise ConsistencyError(f'error sign_to_files. not find {sign}')
 
         try:
-            for wallet, files in tmp_wallet_to_files.items():
-                if self._convert_to_set(self._wallet_to_files[wallet]) != self._convert_to_set(files):
-                    raise ConsistencyError(f'Not equal {self._wallet_to_files[wallet]} {files}')
+            for sign, files in tmp_sign_to_files.items():
+                if self._convert_to_set(self._sign_to_files[sign]) != self._convert_to_set(files):
+                    raise ConsistencyError(f'Not equal {self._sign_to_files[sign]} {files}')
         except KeyError:
-            raise ConsistencyError(f'error wallet_to_files. not find {wallet}')
+            raise ConsistencyError(f'error sign_to_files. not find {sign}')
 
     # def _generate_file_to_wallets(self):
     #     file_to_wallets = defaultdict(list)
@@ -104,35 +107,37 @@ class AccessController:
     #             file_to_wallets[file].append((wall, access))
     #     return file_to_wallets
 
-    def _generate_wallet_to_files(self):
-        wallet_to_files = defaultdict(list)
-        for file, walls in self._file_to_wallets.items():
-            for wall, access in walls:
-                wallet_to_files[wall].append((file, access))
-        return wallet_to_files
+    def _generate_sign_to_files(self):
+        sign_to_files = defaultdict(list)
+        for file, signs in self._file_to_signs.items():
+            for sign, access in signs:
+                sign_to_files[sign].append((file, access))
+        return sign_to_files
 
-    async def get_files_from_wallet(self, wallet):
+    async def get_files_from_sign(self, sign):
+        sign = self._cryptographer.encrypt(sign)
         files = []
-        for file, access in self._wallet_to_files[wallet]:
+        for file, access in self._sign_to_files[sign]:
             files.append([file, ACCESS_TO_STR[access]])
         return files
 
     async def get_file_accesses(self, file_addr):
         file_accesses = []
-        wallets = self._file_to_wallets.get(file_addr, [])
-        for wall, access in wallets:
-            file_accesses.append([wall, ACCESS_TO_STR[access]])
+        signs = self._file_to_signs.get(file_addr, [])
+        for sign, access in signs:
+            file_accesses.append([sign, ACCESS_TO_STR[access]])
         return file_accesses
 
-    async def change_access_to_file(self, file_addr: str, wallet: str, file_access: int, owner_wallet: str):
-        if wallet == owner_wallet:
+    async def change_access_to_file(self, file_addr: str, sign: str, file_access: int, owner_wallet: str):
+        sign = self._cryptographer.encrypt(sign)
+        if sign == owner_wallet:
             raise ValueError("Can't change wallet owner")
         if file_access not in [-1, 0, 1]:
             return
         await self._consistency_check()
         f = False
-        for wall, access in self._file_to_wallets[file_addr]:
-            if wall != owner_wallet:
+        for sign, access in self._file_to_signs[file_addr]:
+            if sign != owner_wallet:
                 continue
             f = True
             if access < Access.OWNER.value:
@@ -140,39 +145,41 @@ class AccessController:
         if not f:
             raise PermissionDenied(f'{owner_wallet} does not have owner access')
         f = False
-        new_wallets = []
-        for wall, access in self._file_to_wallets[file_addr]:
-            if wall == wallet:
+        new_signs = []
+        for sign, access in self._file_to_signs[file_addr]:
+            if sign == sign:
                 f = True
                 if file_access == -1:
                     continue
                 else:
-                    new_wallets.append([wall, int(file_access)])
+                    new_signs.append([sign, int(file_access)])
             else:
-                new_wallets.append([wall, access])
+                new_signs.append([sign, access])
         if not f and file_access in [0, 1]:
-            new_wallets.append([wallet, int(file_access)])
-        self._file_to_wallets[file_addr] = new_wallets
-        self._wallet_to_files = self._generate_wallet_to_files()
+            new_signs.append([sign, int(file_access)])
+        self._file_to_signs[file_addr] = new_signs
+        self._sign_to_files = self._generate_sign_to_files()
         await self._save_access_file()
         await self._consistency_check()
 
-    async def create_new_addr(self, addr, wallet):
+    async def create_new_addr(self, addr, sign):
+        sign = self._cryptographer.encrypt(sign)
         await self._consistency_check()
-        self._file_to_wallets[addr] = [[wallet, Access.OWNER.value]]
-        self._wallet_to_files = self._generate_wallet_to_files()
+        self._file_to_signs[addr] = [[sign, Access.OWNER.value]]
+        self._sign_to_files = self._generate_sign_to_files()
         await self._save_access_file()
         await self._consistency_check()
 
     async def remove_addr(self, rm_addr):
         await self._consistency_check()
-        del self._file_to_wallets[rm_addr]
-        self._wallet_to_files = self._generate_wallet_to_files()
+        del self._file_to_signs[rm_addr]
+        self._sign_to_files = self._generate_sign_to_files()
         await self._save_access_file()
         await self._consistency_check()
 
-    async def get_access(self, wallet, file_addr):
-        for addr, access in self._wallet_to_files[wallet]:
+    async def get_access(self, sign, file_addr):
+        sign = self._cryptographer.encrypt(sign)
+        for addr, access in self._sign_to_files[sign]:
             if addr != file_addr:
                 continue
             return access

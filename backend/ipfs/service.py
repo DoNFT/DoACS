@@ -12,7 +12,6 @@ from typing import TypeVar
 
 from aiohttp import ClientSession
 from aiohttp import ClientTimeout
-from settings import FILE_NAME_ACCESSES
 from settings import IPFSServiceEnum
 
 
@@ -93,9 +92,10 @@ class IPFSService(BaseIPFSService):
                 info = resp.headers[info_key]
         return info
 
-    async def add(self, payload: bytes, only_hash: bool = False) -> str:
+    async def add(self, payload: bytes, only_hash: bool = False, wrap_with_dir: bool = False) -> str:
         result = await self._make_request(
-            "add", {"only-hash": str(only_hash).lower()}, {"file": payload}
+            "add", {"only-hash": str(only_hash).lower(), "wrap-with-directory": str(wrap_with_dir).lower()},
+            {"file": payload}
         )
         try:
             decoded = json.loads(result)
@@ -260,7 +260,6 @@ class NTFStorageIPFSService(BaseRestfulIPFSService):
             url = f"https://{cid}.ipfs.nftstorage.link/{self._dest_formfield_name}"
         logging.info(f"[Info] Getting file from {url}")
         return await self._make_request("get", url)
-
 
 
 _service_mapping = {
