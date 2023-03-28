@@ -19,6 +19,8 @@ class FernetCryptographer(Cryptographer):
         self._fernet = Fernet(key)
 
     def encrypt(self, data):
+        if isinstance(data, str):
+            data = data.encode('utf-8')
         return self._fernet.encrypt(data)
 
     def decrypt(self, data):
