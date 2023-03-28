@@ -101,7 +101,7 @@ class IPFSService(BaseIPFSService):
         try:
             if wrap_with_dir:
                 decoded = result.decode("utf-8")
-                decoded = json.loads(decoded.split('\n')[0])
+                decoded = json.loads(decoded.split('\n')[-1])
             else:
                 decoded = json.loads(result)
             return decoded["Hash"]
