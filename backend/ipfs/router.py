@@ -51,7 +51,8 @@ async def upload(payload: UploadFile = File(...), wrap_with_dir: bool = Form(Fal
     """
     # if not await wrapper_ipfs_service.get_ipfs_service().check_access(owner_address):
     #     raise HTTPException(status_code=400, detail=f"This address is not accessible {owner_address}")
-    hash = await wrapper_ipfs_service.get_ipfs_service().add(payload.file.read(), wrap_with_dir=wrap_with_dir)
+    ipfs_service = wrapper_ipfs_service.get_ipfs_service()
+    hash = await ipfs_service.add(payload.file.read(), wrap_with_dir=wrap_with_dir, filename=payload.filename)
     return f"ipfs://{hash}"
 
 

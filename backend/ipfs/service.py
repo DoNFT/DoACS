@@ -92,10 +92,11 @@ class IPFSService(BaseIPFSService):
                 info = resp.headers[info_key]
         return info
 
-    async def add(self, payload: bytes, only_hash: bool = False, wrap_with_dir: bool = False) -> str:
+    async def add(self, payload: bytes, only_hash: bool = False, wrap_with_dir: bool = False,
+                  filename: str = "file") -> str:
         result = await self._make_request(
             "add", {"only-hash": str(only_hash).lower(), "wrap-with-directory": str(wrap_with_dir).lower()},
-            {"file": payload}
+            {filename: payload}
         )
         try:
             decoded = json.loads(result)
