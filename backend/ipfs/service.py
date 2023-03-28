@@ -99,7 +99,11 @@ class IPFSService(BaseIPFSService):
             {filename: payload}
         )
         try:
-            decoded = json.loads(result)
+            if wrap_with_dir:
+                decoded = result.decode("utf-8")
+                decoded = json.loads(decoded.split('\n')[0])
+            else:
+                decoded = json.loads(result)
             return decoded["Hash"]
         except ValueError:
             raise IPFSServiceException(f"Got invalid json while adding file: {result}")
