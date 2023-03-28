@@ -1,5 +1,5 @@
 {
-  "name": "donft_template",
+  "name": "DoFiles",
   "version": "0.1.0",
   "scripts": {
     "serve": "vue-cli-service serve",

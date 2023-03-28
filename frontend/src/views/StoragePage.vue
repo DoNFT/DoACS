@@ -257,6 +257,7 @@
       updateIPNS.updatedLink = ''
       const owner = ConnectionStore.getUserIdentity()
       try{
+        const signature = await signMessage()
         updateIPNS.isLoading = true
         updateIPNS.updatedLink = await DecentralizedStorage.update(updateIPNS.newIpfsKey, updateIPNS.ipnsKey, owner)
       }

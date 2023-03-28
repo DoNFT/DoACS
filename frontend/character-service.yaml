@@ -1,6 +1,6 @@
 version: "3.9"
 services:
-  donft_character:
+  doacs:
     build: ./
     restart: always
     environment:

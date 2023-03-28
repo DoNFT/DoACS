@@ -3,10 +3,13 @@
     <div class="lp-intro">
       <div>
         <h1>
-          Welcome to DoCharacter demo by DoNFT
+          Welcome to DoFiles demo by DoNFT
         </h1>
         <div>
-          Use power of neural network algorithms to create new unique combinations of digital art
+          Decentralized DropBox on IPFS allows you:<br/>
+          - publish file of IPFS<br/>
+          - use IPNS approach to update files by link<br/>
+          - manage access to updating files on IPNS<br/>
         </div>
         <div>
           <span class="btn" @click="openModal">Connect wallet</span>

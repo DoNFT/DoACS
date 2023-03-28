@@ -20,16 +20,34 @@ services:
     volumes:
       - /etc/acme.sh
       - /var/run/docker.sock:/var/run/docker.sock:ro
-  donft_backend_ipfs_pure:
+  do-acs:
+    build: ./frontend/
+    ports:
+      - 80:80
+    environment:
+      - PUBLIC_HOST=$DO_ACS_URL
+      - VIRTUAL_HOST=$DO_ACS_URL
+      - LETSENCRYPT_HOST=$DO_ACS_URL
+      - VUE_APP_API_TIMEOUT=200
+      - VUE_APP_NETWORK_FILECOIN_HYPERSPACE_TEST_SUPPORT=1
+      - VUE_APP_IPNS_ENDPOINT=$IPFS_PURE_URL/api/ipfs
+      - VUE_APP_IPNS_ATTEMPTS=10
+      - VUE_APP_IPFS_MAX_SIZE=5
+    depends_on:
+      - ipfs-pure
+  ipfs-pure:
     extends:
       file: ./backend/ipfs-pure-service.yaml
       service: donft_ipfs_pure
     environment:
       - PUBLIC_HOST=$IPFS_PURE_URL
       - VIRTUAL_HOST=$IPFS_PURE_URL
+      - LETSENCRYPT_HOST=$IPFS_PURE_URL
       - PASSWORD=$PASSWORD
-  ipfs-node-1:
-    container_name: ipfs-node-1
+    depends_on:
+      - ipfs-node
+  ipfs-node:
+    container_name: ipfs-node
     image: ipfs/go-ipfs:latest
     ports:
       - 4001:4001 # ipfs swarm - expose if needed/wanted

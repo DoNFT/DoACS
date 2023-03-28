@@ -18,8 +18,8 @@ npm run build
 
 ### build
 
-    docker build --rm --no-cache -t donft_avatar:latest .
+    docker build --rm --no-cache -t doacs:latest .
 
 ### run
 
-    docker run --rm  -p 8080:80  --name donft_avatar donft_avatar:latest
+    docker run --rm  -p 8080:80  --name doacs doacs:latest
