@@ -12,8 +12,8 @@ from settings import FERNET_KEY
 class Access(Enum):
     READ = 0
     EDIT = 1
-    OWNER = 2
-    ADMIN = 3
+    OWNER = 3
+    ADMIN = 2
 
 
 ACCESS_TO_STR = {
@@ -128,33 +128,22 @@ class AccessController:
             file_accesses.append([sign, ACCESS_TO_STR[access]])
         return file_accesses
 
-    async def change_access_to_file(self, file_addr: str, sign: str, file_access: int, owner_wallet: str):
+    async def change_access_to_file(self, file_addr: str, sign: str, file_access: int):
         sign = self._cryptographer.encrypt(sign)
-        if sign == owner_wallet:
-            raise ValueError("Can't change wallet owner")
         if file_access not in [-1, 0, 1]:
             return
         await self._consistency_check()
         f = False
-        for sign, access in self._file_to_signs[file_addr]:
-            if sign != owner_wallet:
-                continue
-            f = True
-            if access < Access.OWNER.value:
-                raise PermissionDenied(f'{owner_wallet} does not have owner access')
-        if not f:
-            raise PermissionDenied(f'{owner_wallet} does not have owner access')
-        f = False
         new_signs = []
-        for sign, access in self._file_to_signs[file_addr]:
-            if sign == sign:
+        for s, access in self._file_to_signs[file_addr]:
+            if s == sign:
                 f = True
                 if file_access == -1:
                     continue
                 else:
-                    new_signs.append([sign, int(file_access)])
+                    new_signs.append([s, int(file_access)])
             else:
-                new_signs.append([sign, access])
+                new_signs.append([s, access])
         if not f and file_access in [0, 1]:
             new_signs.append([sign, int(file_access)])
         self._file_to_signs[file_addr] = new_signs
