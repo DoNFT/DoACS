@@ -16,7 +16,7 @@ services:
       - IPFS_PROJECT_ID=23gzaKecKievdRIjstg7WA4QPoF
       - IPFS_PROJECT_SECRET=83a21969d6bdfd8674b91be42f7799ce
       - IPFS_SERVICE=IPFS
-      - IPFS_API_HOST=http://172.21.0.2:5001/api/v0/
+      - IPFS_API_HOST=http://172.21.0.3:5001/api/v0/
       - FILE_NAME_ACCESSES=accesses_pure.txt
     volumes:
       - /root/DoACS/backend/backend:/backend/
